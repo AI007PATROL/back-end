@@ -1,3 +1,6 @@
+app.get("/", (req, res) => {
+  res.send("🚀 WhatsApp AutoMessage Backend Running!");
+});
 const express = require("express");
 const { Client, LocalAuth } = require("whatsapp-web.js");
 const qrcode = require("qrcode");
