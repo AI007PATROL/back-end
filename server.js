@@ -1,26 +1,30 @@
 const express = require("express");
 const { Client, LocalAuth } = require("whatsapp-web.js");
 const qrcode = require("qrcode");
-const cors = require("cors");   // ✅ Added CORS
 
 const app = express();
 app.use(express.json());
-app.use(cors());  // ✅ Allow Cloudflare frontend
 
 let client;
 let isReady = false;
+let latestQR = null;
 
-// Root test route
+// Root check
 app.get("/", (req, res) => {
   res.send("🚀 WhatsApp AutoMessage Backend Running!");
 });
 
+// Start service
 app.get("/start", async (req, res) => {
+  if (client) {
+    return res.json({ status: "already started" });
+  }
+
   client = new Client({ authStrategy: new LocalAuth() });
 
   client.on("qr", async (qr) => {
-    const qrImage = await qrcode.toDataURL(qr);
-    res.json({ qr: qrImage });
+    latestQR = await qrcode.toDataURL(qr);
+    console.log("📷 New QR generated");
   });
 
   client.on("ready", () => {
@@ -29,8 +33,16 @@ app.get("/start", async (req, res) => {
   });
 
   client.initialize();
+  res.json({ status: "service started, fetch QR at /qr" });
 });
 
+// Get QR code
+app.get("/qr", (req, res) => {
+  if (!latestQR) return res.status(400).json({ error: "QR not generated yet" });
+  res.json({ qr: latestQR });
+});
+
+// Send messages
 app.post("/send", async (req, res) => {
   if (!isReady) return res.status(400).send("Client not ready");
 
@@ -42,11 +54,13 @@ app.post("/send", async (req, res) => {
   res.json({ status: "messages sent" });
 });
 
+// End service
 app.get("/end", (req, res) => {
   if (client) {
     client.destroy();
     client = null;
     isReady = false;
+    latestQR = null;
   }
   res.json({ status: "service ended" });
 });
