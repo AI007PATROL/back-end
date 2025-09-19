@@ -1,15 +1,19 @@
-app.get("/", (req, res) => {
-  res.send("🚀 WhatsApp AutoMessage Backend Running!");
-});
 const express = require("express");
 const { Client, LocalAuth } = require("whatsapp-web.js");
 const qrcode = require("qrcode");
+const cors = require("cors");   // ✅ Added CORS
 
 const app = express();
 app.use(express.json());
+app.use(cors());  // ✅ Allow Cloudflare frontend
 
 let client;
 let isReady = false;
+
+// Root test route
+app.get("/", (req, res) => {
+  res.send("🚀 WhatsApp AutoMessage Backend Running!");
+});
 
 app.get("/start", async (req, res) => {
   client = new Client({ authStrategy: new LocalAuth() });
